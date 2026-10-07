@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Stop-loss and Position size Calculator | F&amp;O Chanakya</title>
+<style>
+:root{color-scheme:light;--ink:#111418;--mute:#5B6470;--row:#F4F6F8;--cell:#FFFFFF;--cellb:#CDD5DC;--green:#0A8A6A;--greenbg:#E6F5F0;--red:#C8363B;--redbg:#FBE6E6;--okbg:#DDF3EA;--amber:#8A5A00;--amberbg:#FBEBC8;--steel:#3B4652;
+--font:'Inter','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif}
+*,*:before,*:after{box-sizing:border-box}
+html,body{background:#FFFFFF}
+body{margin:0;color:var(--ink);font-family:var(--font);line-height:1.35;font-size:14px}
+.wrap{max-width:1020px;margin:0 auto;padding:14px 14px 12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;margin-bottom:8px}
+@media (max-width:760px){.top{flex-wrap:wrap}}
+h1{font-size:clamp(18px,2.6vw,25px);line-height:1.2;margin:0;font-weight:500;letter-spacing:-.01em}
+h1 b{font-weight:800;margin-left:1.6em;color:var(--green);white-space:nowrap}
+.sub{color:var(--mute);margin:0 0 10px;font-size:13px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+@media (max-width:800px){.cards{grid-template-columns:1fr}}
+.card{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:12px 14px 10px;box-shadow:0 8px 22px rgba(17,20,24,.07)}
+.head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.badge{flex:0 0 26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.head .t{font-weight:800;font-size:16px;line-height:1.1}
+.head .s{font-size:11.5px;color:var(--mute);margin-left:auto;text-align:right}
+.chip{display:inline-flex;font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;margin:0 0 6px}
+.chip.sup{background:var(--greenbg);color:var(--green)} .chip.res{background:var(--redbg);color:var(--red)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--row);border-radius:10px;padding:3px 6px 3px 12px;margin-bottom:5px}
+.row .lbl{font-weight:700;color:var(--mute);font-size:13.5px;line-height:1.2;flex:1;min-width:0}
+.row .lbl small{display:block;font-weight:600;font-size:11px;color:var(--green)}
+.cell{flex:0 0 42%;min-width:0;display:flex;align-items:center;gap:3px;background:var(--cell);border:1.5px solid var(--cellb);border-radius:8px;padding:2px 10px;transition:border-color .15s,box-shadow .15s}
+.cell:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(10,138,106,.18)}
+.cell input{border:0;background:transparent;text-align:right;font:inherit;font-weight:800;font-size:16px;line-height:1.2;color:var(--ink);width:100%;min-width:0;outline:none;padding:0}
+.cell i{font-style:normal;font-weight:800;font-size:16px;color:var(--mute)}
+.cell.auto{background:var(--greenbg);border-color:#A9DCCB}
+.cell.auto input{color:var(--green)}
+.cell select{appearance:none;-webkit-appearance:none;border:0;background:transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' fill='none' stroke='%23111418' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 0 center;font:inherit;font-weight:800;font-size:15px;line-height:1.2;color:var(--ink);width:100%;padding:0 18px 0 0;text-align:right;text-align-last:right;cursor:pointer;outline:none}
+.cell.sel{padding:0;position:relative;cursor:pointer}
+.cell.sel select{padding:3px 30px 3px 12px;background-position:right 11px center;height:100%}
+.cell.empty{border-color:var(--red);background:#FFF8F8}
+.cell.empty:focus-within{border-color:var(--red);box-shadow:0 0 0 3px rgba(200,54,59,.18)}
+.cell.filled{border-color:var(--green);background:#fff}
+.cell select.empty{color:var(--red);font-weight:700}
+.cell input::placeholder{color:#A9B2BC;font-weight:600;font-size:14px;opacity:1}
+.hide{display:none!important}
+.bar{background:var(--green);color:#fff;border-radius:11px;padding:6px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800;font-size:24px;line-height:1.2;margin:7px 0 7px;box-shadow:0 5px 14px rgba(10,138,106,.25)}
+.bar>span:first-child{font-size:17px}
+.bar.idle{background:#8C97A3;box-shadow:none}
+.bar.skip{background:var(--red);box-shadow:0 5px 14px rgba(200,54,59,.25)} .bar.warn{background:var(--amber);box-shadow:0 5px 14px rgba(138,90,0,.22)}
+.detail{font-size:12.5px;margin:0 0 6px;font-weight:600}
+.detail.bad{color:var(--amber)}
+.detail.idle{color:var(--mute)}
+.viz{border:1px solid #E3E8EC;border-radius:10px;padding:4px 6px 2px;margin:0 0 6px;background:#FBFCFD}
+.viz svg{width:100%;height:auto;display:block}
+.meter{margin:0 0 7px}
+.mrow{display:flex;justify-content:space-between;font-size:12px;margin:3px 0 2px}
+.mrow span{color:var(--mute);font-weight:600} .mrow b{font-weight:800}
+.track{height:8px;border-radius:5px;background:#E9EDF0;overflow:hidden}
+.fill{height:100%;border-radius:5px;transition:width .25s}
+.fill.g{background:var(--green)} .fill.r{background:var(--red)} .fill.s{background:var(--steel)}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 0 7px}
+.mini div{background:var(--row);border-radius:8px;padding:4px 8px}
+.mini span{display:block;font-size:10.5px;color:var(--mute);font-weight:600;line-height:1.2}
+.mini b{font-size:13.5px;font-weight:800}
+.help{color:var(--mute);font-size:11.5px;margin:6px 0 0;line-height:1.35}
+.msg{border-radius:10px;padding:8px 12px;font-weight:600;font-size:13px}
+.msg b{display:block;font-size:15px;line-height:1.25}
+.msg span{font-weight:400}
+.m-idle{background:#F1F4F6;color:var(--steel);border:2px solid #D5DCE2}
+.m-ok{background:var(--okbg);color:var(--green);border:2px solid var(--green)}
+.m-skip{background:var(--redbg);color:var(--red);border:2px solid var(--red)}
+.m-warn{background:var(--amberbg);color:var(--amber);border:2px solid var(--amber)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.foot{color:var(--mute);font-size:11px;margin:8px 0 0;line-height:1.35}
+.reset{white-space:nowrap;flex:0 0 auto;padding:5px 14px;border-radius:8px;border:1.5px solid var(--red);background:var(--red);color:#fff;font:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.reset:hover{background:#A82B30;border-color:#A82B30}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top">
+<h1>Stop-loss and Position size Calculator<b>F&amp;O Chanakya</b></h1>
+<button class="reset" type="button" id="reset">Reset</button>
+</div>
+<div class="cards">
+
+<section class="card" aria-labelledby="h-sl">
+<div class="head"><span class="badge">1</span><div class="t" id="h-sl">Stop-loss calculator</div><div class="s">Choose a method, enter the numbers</div></div>
+<label class="row"><span class="lbl">Trade</span><span class="cell sel empty" id="sideCell"><select id="side" class="empty" aria-label="Trade"><option value="" disabled selected hidden>Select</option><option value="buy">Buy (long)</option><option value="sell">Sell (short)</option></select></span></label>
+<label class="row"><span class="lbl">Method</span><span class="cell sel empty" id="methodCell"><select id="method" class="empty" aria-label="Method"><option value="" disabled selected hidden>Select</option><option value="sr">Support/Resistance</option><option value="atr">ATR based</option><option value="pct">% based</option><option value="trail">Trailing</option></select></span></label>
+<label class="row"><span class="lbl">Entry price</span><span class="cell"><input data-k="entry" inputmode="decimal" autocomplete="off"></span></label>
+
+<div class="chip sup" id="chip" data-m="sr"></div>
+<label class="row" data-m="sr"><span class="lbl">Stop-loss price<small>See the chart and Enter yourself</small></span><span class="cell"><input data-k="slm" inputmode="decimal" autocomplete="off"></span></label>
+
+<label class="row" data-m="atr"><span class="lbl">ATR (Average True Range), points</span><span class="cell"><input data-k="atr" inputmode="decimal" autocomplete="off"></span></label>
+<label class="row" data-m="atr"><span class="lbl">Multiplier</span><span class="cell"><input data-k="mult" inputmode="decimal" autocomplete="off"></span></label>
+
+<label class="row" data-m="pct"><span class="lbl">Capital (₹)</span><span class="cell"><input data-k="cap" inputmode="decimal" autocomplete="off"></span></label>
+<label class="row" data-m="pct"><span class="lbl">Risk per trade</span><span class="cell"><input data-k="risk" inputmode="decimal" autocomplete="off"><i>%</i></span></label>
+<label class="row" data-m="pct"><span class="lbl">Brokerage/Charges (Approx) ₹</span><span class="cell"><input data-k="cost" inputmode="decimal" autocomplete="off"></span></label>
+
+<label class="row" data-m="trail"><span class="lbl">Current price</span><span class="cell"><input data-k="cur" inputmode="decimal" autocomplete="off"></span></label>
+<label class="row" data-m="trail"><span class="lbl">Previous stop-loss points</span><span class="cell"><input data-k="prevpts" inputmode="decimal" autocomplete="off"></span></label>
+
+<div class="bar" id="slBar" aria-live="polite"><span>Stop-loss</span><span id="slVal"></span></div>
+<p class="detail" id="slDetail"></p>
+<div class="viz" id="vizBox"><svg id="ladder" viewBox="0 0 420 140" role="img" aria-label="Vertical price diagram of entry and stop-loss"></svg></div>
+<p class="help" id="slHelp"></p>
+</section>
+
+<section class="card" aria-labelledby="h-lot">
+<div class="head"><span class="badge">2</span><div class="t" id="h-lot">Position Size/Quantity</div><div class="s">Stop-loss comes here automatically</div></div>
+<label class="row"><span class="lbl">Capital (₹)<small class="hide" id="capNote">taken from the % based boxes</small></span><span class="cell"><input data-k="cap" inputmode="decimal" autocomplete="off"></span></label>
+<label class="row"><span class="lbl">Risk per trade<small class="hide" id="riskNote">taken from the % based boxes</small></span><span class="cell"><input data-k="risk" inputmode="decimal" autocomplete="off"><i>%</i></span></label>
+<label class="row"><span class="lbl">SL (Stop-Loss) points<small>from the stop-loss calculator</small></span><span class="cell auto"><input id="slpts" readonly tabindex="-1"></span></label>
+<label class="row"><span class="lbl">Lot size (units)</span><span class="cell"><input data-k="lot" inputmode="numeric" autocomplete="off"></span></label>
+<label class="row"><span class="lbl">Brokerage/Charges (Approx) ₹<small class="hide" id="lockNote">locked: from the stop-loss calculator</small></span><span class="cell" id="costCell"><input id="costR" data-k="cost" inputmode="decimal" autocomplete="off"></span></label>
+<div class="bar" id="lotBar" aria-live="polite"><span>Lots</span><span id="lotVal"></span></div>
+<div class="meter" id="meter"></div>
+<div class="mini" id="mini"></div>
+<div class="msg" id="msg" aria-live="polite"></div>
+</section>
+
+</div>
+<p class="foot">Lots = (Capital × Risk% − Charges) ÷ (SL points × Lot size), rounded down. The lot size is only an example; check the actual lot size from the NSE (National Stock Exchange) contract. Educational purposes only. All prices are illustrative. The actual loss may differ from the stop-loss price. Trading involves risk.</p>
+</div>
+<script>
+var MAX_PRICE=100000;
+var KEYS=['entry','atr','mult','cap','risk','prevpts','lot','cost','slm','cur'];
+var PH={cost:'Optional'};
+var S={side:'',method:''};KEYS.forEach(function(k){S[k]=0});   /* everything blank by default */
+var $=function(id){return document.getElementById(id)};
+var inputs=[].slice.call(document.querySelectorAll('input[data-k]'));
+inputs.forEach(function(i){i.placeholder=PH[i.dataset.k]||'Enter'});
+function parse(s){s=String(s).replace(/[^0-9.]/g,'');var v=parseFloat(s);return isFinite(v)?v:0}
+function nf(n){return (Math.round(n*100)/100).toLocaleString('en-IN',{maximumFractionDigits:2})}
+function disp(v){return v>0?nf(v):''}
+function rup(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function selState(){['side','method'].forEach(function(id){var on=!$(id).value;$(id).classList.toggle('empty',on);$(id+'Cell').classList.toggle('empty',on);$(id+'Cell').classList.toggle('filled',!on)})}
+/* red border = still empty, green border = value entered/selected (optional Charges box stays neutral) */
+function paint(){inputs.forEach(function(i){var k=i.dataset.k;if(k==='cost')return;var c=i.closest('.cell'),on=S[k]>0;c.classList.toggle('empty',!on);c.classList.toggle('filled',on)})}
+function sync(){inputs.forEach(function(i){i.value=disp(S[i.dataset.k])});
+ $('side').value=S.side;
+ $('method').options[1].text=S.side==='buy'?'Support':S.side==='sell'?'Resistance':'Support/Resistance';
+ $('method').value=S.method;selState()}
+var HELP={
+ none:'First select the Trade (Buy/Sell) and the Method, then enter the numbers.',
+ sr_buy:'Support: in a buy trade, the stop-loss is placed below the support, leaving a small buffer. There is no universal number for the buffer.',
+ sr_sell:'Resistance: in a sell trade, the stop-loss is placed above the resistance, leaving a small buffer. There is no universal number for the buffer.',
+ atr:'ATR (Average True Range) is the average movement range of recent candles. The multiplier is not fixed (1.5, 2 or 3). ATR helps, but it is not a guarantee.',
+ pct:'% based: works out the maximum stop-loss for 1 lot from the risk % of capital. It comes from the budget, not from the chart. If the chart level is farther away, skip the trade.',
+ trail:'Trailing: the stop-loss moves along with the price, only in the favourable direction. Lots are calculated from the distance between the current price and the stop-loss.'
+};
+function calc(){
+ var d=S.side==='buy'?1:-1,e=S.entry,m=S.method,sl=0,dist=0,ok=true,empty=false,why='',det='',ref=e,refLbl='Entry';
+ function no(msg,emp){ok=false;why=msg;empty=!!emp}
+ if(!S.side||!m)no('First select the Trade and the Method.',1);
+ else if(e<=0)no('Enter the entry price.',1);
+ else if(m==='sr'){
+  if(S.slm<=0)no('Enter the stop-loss price (see the chart).',1);
+  else{
+   sl=S.slm;dist=Math.abs(e-sl);
+   if(d*(e-sl)<=0)no(d>0?'In a buy trade, the stop-loss must be below the entry.':'In a sell trade, the stop-loss must be above the entry.');
+   det=nf(e)+(d>0?' − ':' + ')+nf(dist)+' = '+nf(sl);
+  }
+ }else if(m==='atr'){
+  if(S.atr<=0||S.mult<=0)no('Enter the ATR and the multiplier.',1);
+  else{dist=S.mult*S.atr;sl=e-d*dist;
+   det=nf(e)+(d>0?' − ':' + ')+'('+nf(S.mult)+' × '+nf(S.atr)+') = '+nf(sl)}
+ }else if(m==='pct'){
+  if(S.cap<=0||S.risk<=0||S.lot<=0)no('Enter Capital, Risk per trade and Lot size (Lot size is on the right side).',1);
+  else{
+   var budget=S.cap*S.risk/100,usable=budget-S.cost;
+   if(usable<=0)no('The budget must be larger than the charges. Increase the capital or risk %, or check the charges.');
+   else{dist=usable/S.lot;sl=e-d*dist;
+    det=rup(budget)+' − '+rup(S.cost)+' = '+rup(usable)+' ÷ '+nf(S.lot)+' = '+nf(dist)+' points'}
+  }
+ }else if(m==='trail'){
+  var p=S.prevpts,c=S.cur;ref=c;refLbl='Current';
+  if(p<=0||c<=0)no('Enter the current price and the previous stop-loss points.',1);
+  else{
+   var fromCur=c-d*p,fromEntry=e-d*p;
+   sl=d>0?Math.max(fromEntry,fromCur):Math.min(fromEntry,fromCur);
+   dist=Math.abs(c-sl);
+   det=(Math.abs(sl-fromCur)<1e-9)?('Current '+nf(c)+(d>0?' − ':' + ')+nf(p)+' = '+nf(sl)):('Entry '+nf(e)+(d>0?' − ':' + ')+nf(p)+' = '+nf(sl)+' (the stop-loss from the current price would move backward, so it is not moved)');
+  }
+ }
+ if(ok&&sl<=0)no('The stop-loss price must be above 0.');
+ if(ok&&dist<=0)no('The stop-loss distance must be greater than 0.');
+ return {ok:ok,empty:empty,why:why,sl:sl,dist:ok?dist:0,det:det,ref:ref,refLbl:refLbl};
+}
+function el(t,a,c){var x=document.createElementNS('http://www.w3.org/2000/svg',t);for(var k in a)x.setAttribute(k,a[k]);if(c!=null)x.textContent=c;return x}
+function ladder(r){
+ var svg=$('ladder');svg.innerHTML='';$('vizBox').classList.toggle('hide',!r.ok);if(!r.ok)return;
+ /* vertical diagram: higher price on top, lower price at the bottom */
+ var lo=Math.min(r.ref,r.sl),hi=Math.max(r.ref,r.sl),pad=Math.max((hi-lo)*0.3,1),L=lo-pad,R=hi+pad;
+ var Y=function(p){return 14+(R-p)/(R-L)*112};
+ var yr=Y(r.ref),ys=Y(r.sl),x1=170,x2=330,top=Math.min(yr,ys),h=Math.abs(yr-ys);
+ svg.appendChild(el('rect',{x:x1,y:top,width:x2-x1,height:h,rx:4,fill:'#FBE6E6',stroke:'#C8363B','stroke-dasharray':'4 3'}));
+ svg.appendChild(el('text',{x:(x1+x2)/2,y:top+h/2+5,'text-anchor':'middle',fill:'#C8363B','font-size':13,'font-weight':800},nf(r.dist)+' pts'));
+ svg.appendChild(el('line',{x1:x1-6,x2:x2+6,y1:yr,y2:yr,stroke:'#0A8A6A','stroke-width':4}));
+ svg.appendChild(el('text',{x:x1-14,y:yr+5,'text-anchor':'end',fill:'#0A8A6A','font-size':12.5,'font-weight':800},r.refLbl+' '+nf(r.ref)));
+ svg.appendChild(el('line',{x1:x1-6,x2:x2+6,y1:ys,y2:ys,stroke:'#C8363B','stroke-width':4}));
+ svg.appendChild(el('text',{x:x1-14,y:ys+5,'text-anchor':'end',fill:'#C8363B','font-size':12.5,'font-weight':800},'Stop-loss '+nf(r.sl)));
+ svg.appendChild(el('text',{x:414,y:12,'text-anchor':'end',fill:'#8A94A0','font-size':10.5,'font-weight':600},'▲ Higher price'));
+ svg.appendChild(el('text',{x:414,y:136,'text-anchor':'end',fill:'#8A94A0','font-size':10.5,'font-weight':600},'▼ Lower price'));
+}
+function render(){
+ paint();
+ var m=S.method,buy=S.side==='buy',r=calc(),lock=(m==='pct');
+ [].slice.call(document.querySelectorAll('[data-m]')).forEach(function(x){x.classList.toggle('hide',x.dataset.m.split(' ').indexOf(m)<0)});
+ $('costR').readOnly=lock;$('costR').tabIndex=lock?-1:0;$('costCell').classList.toggle('auto',lock);$('lockNote').classList.toggle('hide',!lock);
+ $('capNote').classList.toggle('hide',!lock);$('riskNote').classList.toggle('hide',!lock);
+ var chip=$('chip');chip.classList.toggle('sup',buy);chip.classList.toggle('res',!buy);chip.textContent=buy?'Support section (Buy trade)':'Resistance section (Sell trade)';
+ if(!S.side)chip.classList.add('hide');
+ $('slHelp').textContent=!m?HELP.none:(m==='sr'?(buy?HELP.sr_buy:HELP.sr_sell):HELP[m]);
+ $('slBar').className='bar'+(r.ok?'':(r.empty?' idle':' warn'));
+ $('slVal').textContent=r.ok?nf(r.sl):'—';
+ var dd=$('slDetail');
+ if(r.ok){dd.className='detail';dd.textContent=r.det+'   |   SL points = '+nf(r.dist)}else{dd.className='detail '+(r.empty?'idle':'bad');dd.textContent=r.why}
+ ladder(r);
+ $('slpts').value=r.ok?nf(r.dist):'—';
+ var miss=[];if(S.cap<=0)miss.push('Capital');if(S.risk<=0)miss.push('Risk per trade');if(S.lot<=0)miss.push('Lot size');
+ var budget=S.cap*S.risk/100,usable=budget-S.cost,perLot=r.dist*S.lot;
+ var idle=miss.length>0||(!r.ok&&r.empty);
+ var valid=r.ok&&!miss.length&&usable>0&&perLot>0,lots=valid?Math.floor(usable/perLot+1e-9):0;
+ var state=idle?'idle':(!valid?'warn':(lots<1?'skip':'ok'));
+ $('lotBar').className='bar'+(state==='ok'?'':' '+state);
+ $('lotVal').textContent=valid?lots:'—';
+ var mt=$('meter');
+ if(r.ok&&!miss.length&&usable>0&&perLot>0){var mx=Math.max(usable,perLot);
+  mt.classList.remove('hide');
+  mt.innerHTML='<div class="mrow"><span>Usable budget (after charges)</span><b>'+rup(usable)+'</b></div><div class="track"><div class="fill g" style="width:'+(usable/mx*100)+'%"></div></div><div class="mrow"><span>Loss per lot</span><b>'+rup(perLot)+'</b></div><div class="track"><div class="fill '+(perLot>usable?'r':'s')+'" style="width:'+(perLot/mx*100)+'%"></div></div>'}
+ else{mt.classList.add('hide')}
+ var qty=lots*S.lot,dash='—';
+ $('mini').innerHTML='<div><span>Risk budget</span><b>'+(S.cap>0&&S.risk>0?rup(budget):dash)+'</b></div><div><span>Planned loss</span><b>'+(idle?dash:rup(lots*perLot))+'</b></div><div><span>Quantity (units)</span><b>'+(idle?dash:qty.toLocaleString('en-IN'))+'</b></div><div><span>Contract value</span><b>'+(idle?dash:rup(qty*S.entry))+'</b></div>';
+ var g=$('msg');
+ if(miss.length){g.className='msg m-idle';g.innerHTML='<b>Enter '+miss.join(', ')+'</b><span>The lots will appear here once all the boxes are filled.</span>'}
+ else if(!r.ok&&r.empty){g.className='msg m-idle';g.innerHTML='<b>Fill in the boxes on the left</b><span>The stop-loss and lots are calculated once the Trade, Method and numbers are entered.</span>'}
+ else if(!r.ok){g.className='msg m-warn';g.innerHTML='<b>First get a valid stop-loss</b><span>Lots are calculated only when the stop-loss on the left is valid.</span>'}
+ else if(usable<=0){g.className='msg m-warn';g.innerHTML='<b>The budget is smaller than the charges</b><span>Increase the capital or risk %, or check the charges.</span>'}
+ else if(lots<1){g.className='msg m-skip';g.innerHTML='<b>0 lots — skip this setup</b><span>The loss per lot is '+rup(perLot)+' and the usable budget is '+rup(usable)+'. Do not pull the stop-loss closer, and do not increase the risk %.</span>'}
+ else{g.className='msg m-ok';g.innerHTML='<b>'+lots+' lot'+(lots>1?'s':'')+' fits within the budget</b><span>'+lots+' × '+S.lot+' = '+qty.toLocaleString('en-IN')+' units. Planned loss '+rup(lots*perLot)+' (before charges).'+(m==='pct'?' Compare it with the chart level.':'')+'</span>'}
+}
+inputs.forEach(function(el){
+ var k=el.dataset.k;
+ el.addEventListener('input',function(){
+  var v=parse(el.value);
+  if((k==='entry'||k==='cur')&&v>MAX_PRICE){v=MAX_PRICE;el.value=String(v)}
+  if(k==='risk'&&v>100){v=100;el.value='100'}
+  S[k]=v;
+  inputs.forEach(function(o){if(o!==el&&o.dataset.k===k)o.value=disp(v)});   /* Capital/Risk/Charges/Lot stay in sync in both cards */
+  render()});
+ el.addEventListener('blur',function(){el.value=disp(S[k])});
+});
+$('side').addEventListener('change',function(){
+ var n=$('side').value,had=S.side;if(n===S.side)return;
+ S.side=n;
+ if(had&&S.entry>0){   /* already entered stop-loss / current price flip to the other side of entry */
+  if(S.slm>0)S.slm=Math.max(0,2*S.entry-S.slm);
+  if(S.cur>0)S.cur=Math.max(0,2*S.entry-S.cur)}
+ sync();render()});
+$('method').addEventListener('change',function(){S.method=$('method').value;selState();render()});
+/* click anywhere on a dropdown row (label or cell) opens the list */
+[].slice.call(document.querySelectorAll('.row')).forEach(function(row){
+ var sel=row.querySelector('select');if(!sel)return;
+ row.addEventListener('click',function(e){if(e.target===sel)return;try{sel.showPicker()}catch(x){sel.focus()}})});
+function reset(){KEYS.forEach(function(k){S[k]=0});S.side='';S.method='';sync();render()}
+$('reset').addEventListener('click',reset);
+reset();
+</script>
+</body>
+</html>
